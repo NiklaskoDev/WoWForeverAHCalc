@@ -834,7 +834,7 @@
         <button class="btn" id="rcImport">Import recipes…</button>
         <button class="btn danger" id="rcReset">Reset built-in edits</button>
       </div></div>
-      <p class="muted small">Recipes come from MetaForge's WoW Forever database; most required-skill values are marked as estimates there. Fix anything wrong with <b>Edit</b>, or add missing recipes with <b>+ Add recipe</b>.
+      <p class="muted small">Recipes come from MetaForge's WoW Forever database, with required skill from pattern items and Wowhead. Fix anything wrong with <b>Edit</b>, or add missing recipes with <b>+ Add recipe</b>.
         Untick a recipe to leave it out of all calculations.</p>
       <div id="rcOut"></div>`;
     bindSettings(root);

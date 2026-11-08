@@ -51,5 +51,5 @@ The container serves the app and fetches Forever prices in the background, even 
 ## Data notes
 
 - **Sold / day** is an estimate. Blizzard's API has no sales data, so the app counts listings that vanish between hourly updates. It needs the app open for about 6 hours before it shows numbers. Cancelled auctions can be counted as sales, and the figure is for the whole auction house. You can type your own number on **Prices**.
-- Recipes and reagents come from the WoW Forever database at https://metaforge.app (unofficial). Most required-skill values are marked as estimates there, so a recipe can unlock slightly earlier or later in-game. 79 recipes are left out because a reagent has no item data. Items listed twice with different IDs appear as `Name [id]`.
+- Recipes and reagents come from the WoW Forever database at https://metaforge.app (unofficial). Required skill comes from each pattern's real rank, then Wowhead's learned-at level for trainer recipes. A few still use MetaForge's estimate. 79 recipes are left out because a reagent has no item data. Items listed twice with different IDs appear as `Name [id]`.
 - Vendor prices for thread, vials and dyes are estimates. The Blizzard item sync replaces them with the real prices.
