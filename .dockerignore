@@ -1,0 +1,8 @@
+*
+!server/
+!index.html
+!app-core.js
+!app-ui.js
+!data-items.js
+!data-recipes.js
+!data-forever.js

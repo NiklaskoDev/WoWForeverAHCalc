@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>forever-ah</Name>
+  <Repository>ghcr.io/niklaskodev/wowforeverahcalc:latest</Repository>
+  <Registry>https://github.com/NiklaskoDev/WoWForeverAHCalc/pkgs/container/wowforeverahcalc</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/NiklaskoDev/WoWForeverAHCalc/issues</Support>
+  <Project>https://github.com/NiklaskoDev/WoWForeverAHCalc</Project>
+  <Overview>Crafting profit, budget planning and disenchant estimates for WoW Forever, with auction prices and sale-rate estimates updated in the background. There is no built-in login, so keep it on your home network.</Overview>
+  <Category>Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/NiklaskoDev/WoWForeverAHCalc/main/unraid/forever-ah.xml</TemplateURL>
+  <Config Name="Web port" Target="8080" Default="8778" Mode="tcp" Description="Port for the web page." Type="Port" Display="always" Required="true" Mask="false">8778</Config>
+  <Config Name="App data" Target="/data" Default="/mnt/user/appdata/forever-ah" Mode="rw" Description="Saved prices and sale history." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/forever-ah</Config>
+  <Config Name="Blizzard Client ID" Target="BLIZZARD_CLIENT_ID" Default="" Mode="" Description="From develop.battle.net/access/clients." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Blizzard Client Secret" Target="BLIZZARD_CLIENT_SECRET" Default="" Mode="" Description="From the same API client." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Region" Target="FOREVER_REGION" Default="eu|us" Mode="" Description="Your game region." Type="Variable" Display="always" Required="true" Mask="false">eu</Config>
+  <Config Name="Ruleset" Target="FOREVER_RULESET" Default="2" Mode="" Description="1 = PvP, 2 = Normal, 3 = Roleplay, 15 = Roleplay PvP." Type="Variable" Display="always" Required="true" Mask="false">2</Config>
+  <Config Name="Auction house" Target="FOREVER_HOUSE" Default="113" Mode="" Description="The # number from the app's auction house list, e.g. 113." Type="Variable" Display="always" Required="true" Mask="false">113</Config>
+  <Config Name="Check interval (minutes)" Target="POLL_MINUTES" Default="20" Mode="" Description="How often to check for new auction data." Type="Variable" Display="advanced" Required="false" Mask="false">20</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User that owns the app data. 99 is Unraid's nobody." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group that owns the app data. 100 is Unraid's users." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+</Container>

@@ -1,0 +1,16 @@
+services:
+  forever-ah:
+    build: .
+    container_name: forever-ah
+    env_file: .env
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - "8778:8080"
+    volumes:
+      - forever-ah-data:/data
+    restart: unless-stopped
+
+volumes:
+  forever-ah-data:
