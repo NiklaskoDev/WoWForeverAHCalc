@@ -31,7 +31,7 @@ jobs:
           curl -fs http://localhost:8080/ | grep -q 'Forever AH Crafting'
           curl -fs -o /dev/null http://localhost:8080/data-forever.js
           docker exec -u 99:100 smoke touch /data/write-test
-          docker top smoke -eo uid,cmd | grep 'server.py' | grep -q '^99 '
+          docker top smoke -eo pid,uid,cmd | awk '/server.py/ && $2 == 99 {found=1} END {exit !found}'
           docker rm -f smoke
 
       - name: Publish
