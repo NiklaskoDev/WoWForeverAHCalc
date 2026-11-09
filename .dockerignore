@@ -1,5 +1,6 @@
 *
 !server/
+!addon/
 !index.html
 !app-core.js
 !app-ui.js

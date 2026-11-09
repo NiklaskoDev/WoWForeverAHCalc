@@ -7,14 +7,17 @@ import email.utils
 import functools
 import gzip
 import http.server
+import io
 import json
 import os
+import re
 import threading
 import time
 import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 
 CLIENT_ID = os.environ.get('BLIZZARD_CLIENT_ID', '').strip()
 CLIENT_SECRET = os.environ.get('BLIZZARD_CLIENT_SECRET', '').strip()
@@ -24,6 +27,7 @@ HOUSE = os.environ.get('FOREVER_HOUSE', '').strip()
 POLL_MINUTES = max(1, int(os.environ.get('POLL_MINUTES', '5') or 5))
 DATA_DIR = os.environ.get('DATA_DIR', '/data')
 WEB_DIR = os.environ.get('WEB_DIR', '/app/web')
+ADDON_DIR = os.environ.get('ADDON_DIR', '/app/addon')
 PORT = int(os.environ.get('PORT', '8080'))
 
 RULESET_NAMES = {'1': 'PvP', '2': 'Normal', '3': 'Roleplay', '15': 'Roleplay PvP'}
@@ -31,10 +35,13 @@ LABEL = f'Forever {RULESET_NAMES.get(RULESET, "ruleset " + RULESET)} · house {H
 MAX_BOOK = 120
 MAX_GAP_HOURS = 3
 MAX_SALES_HOURS = 336
+MIN_SALES_HOURS = 6
+ADDON_NAME = 'ForeverAHPrices'
 
 lock = threading.Lock()
 status = {'enabled': False, 'ts': 0, 'dataTs': 0, 'label': LABEL, 'error': '', 'lastCheck': 0}
 market_gz = None
+addon_lua = b'ForeverAHPrices_Data = nil\n'
 token = None
 last_modified = {'reg': None, 'com': None}
 
@@ -227,12 +234,49 @@ def update_sales(auctions, now):
     return sales
 
 
+# ---------------------------------------------------------------- in-game addon
+def lua_string(text):
+    return '"' + text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', ' ').replace('\r', ' ') + '"'
+
+
+def build_addon_lua(market):
+    """Returns Data.lua for the addon. Each row is {market, lowest, listed, sold per day}."""
+    sales = market.get('sales') or {}
+    hours = sales.get('hours') or 0
+    sold = sales.get('sold') or {}
+    rows = []
+    for item, e in sorted(market['items'].items(), key=lambda kv: int(kv[0])):
+        row = f"{e['mkt']},{e['min']},{e['qty']}"
+        if hours >= MIN_SALES_HOURS:
+            row += f",{sold.get(str(item), 0) / hours * 24:.1f}"
+        rows.append(f'[{item}]={{{row}}},')
+    ts = (market.get('dataTs') or market['ts']) // 1000
+    head = f"ForeverAHPrices_Data = {{ts={ts},count={len(rows)},label={lua_string(market['label'])},items={{"
+    return ('\n'.join([head, *rows, '}}']) + '\n').encode()
+
+
+def build_addon_zip(server_url):
+    """Packages the addon with the current prices and the address the sync script should use."""
+    with lock:
+        prices = addon_lua
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+        for name in sorted(os.listdir(ADDON_DIR)):
+            if name != 'Data.lua':
+                z.write(os.path.join(ADDON_DIR, name), f'{ADDON_NAME}/{name}')
+        z.writestr(f'{ADDON_NAME}/Data.lua', prices)
+        z.writestr(f'{ADDON_NAME}/server.txt', server_url + '\n')
+    return buf.getvalue()
+
+
 # ---------------------------------------------------------------- worker
 def publish(market):
-    global market_gz
+    global market_gz, addon_lua
     data = gzip.compress(json.dumps(market, separators=(',', ':')).encode(), 6)
+    prices = build_addon_lua(market)
     with lock:
         market_gz = data
+        addon_lua = prices
         status['ts'] = market['ts']
         status['dataTs'] = market.get('dataTs', 0)
         status['error'] = ''
@@ -299,6 +343,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if 'gzip' in self.headers.get('Accept-Encoding', ''):
                 return self.send_body(data, 'application/json', True)
             return self.send_body(gzip.decompress(data), 'application/json')
+        if route == '/api/addon/prices.lua':
+            with lock:
+                data = addon_lua
+            return self.send_body(data, 'text/plain; charset=utf-8')
+        if route == f'/api/addon/{ADDON_NAME}.zip':
+            host = self.headers.get('Host', '')
+            url = 'http://' + host if re.fullmatch(r'[A-Za-z0-9.:\[\]-]+', host) else ''
+            return self.send_body(build_addon_zip(url), 'application/zip')
         return super().do_GET()
 
     def log_message(self, *args):

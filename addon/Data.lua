@@ -1,0 +1,1 @@
+ForeverAHPrices_Data = nil

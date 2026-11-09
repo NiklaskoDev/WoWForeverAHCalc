@@ -33,6 +33,19 @@ The container serves the app and fetches Forever prices in the background, even 
 - Vendor prices and exact item checks still need an API key entered in the browser. The disenchant auction scan needs it too.
 - Logs: `docker logs forever-ah`.
 
+## In-game tooltips
+
+The `ForeverAHPrices` addon shows the container's auction price, lowest listing, amount listed, sold per day, vendor price and data age on item tooltips.
+
+WoW addons can't use the network, so a small script on your PC copies the prices into the addon. The game only reads them at login or on `/reload`.
+
+1. Open **Settings & sync** on the container's page and click **Download addon**. The download already contains your server's address.
+2. Unzip it into `World of Warcraft\_forever_\Interface\AddOns`.
+3. Double-click `Sync prices.bat` in the `ForeverAHPrices` folder and leave the window open while you play. If Windows warns about a downloaded file, choose **More info → Run anyway**. To start it with Windows, put a shortcut to it in `shell:startup`.
+4. Restart the game once so it finds the new addon. After that, `/reload` loads the newest prices.
+
+Type `/fah` in game for status and to turn tooltip lines on or off. Random-enchant items such as "of the Bear" share one item ID, so their price covers every version. If your server's address changes, edit `server.txt` in the addon folder.
+
 ## Getting prices
 
 1. **WoW Forever (Blizzard API, unofficial):** on **Settings & sync**, add a free API client from https://develop.battle.net/access/clients. Keep the game version on WoW Forever, click **Load realms / rulesets**, and pick your ruleset and any house of your faction. Click **Compare houses**, use the house whose prices match the game, then **Update prices now**. Prices refresh hourly while the page is open. These routes are undocumented and may change.

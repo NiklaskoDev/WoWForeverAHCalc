@@ -30,6 +30,10 @@ jobs:
           curl -fs http://localhost:8080/api/status | grep -q '"enabled": false'
           curl -fs http://localhost:8080/ | grep -q 'Forever AH Crafting'
           curl -fs -o /dev/null http://localhost:8080/data-forever.js
+          curl -fs http://localhost:8080/api/addon/prices.lua | grep -q '^ForeverAHPrices_Data'
+          curl -fs -o addon.zip http://localhost:8080/api/addon/ForeverAHPrices.zip
+          python3 -m zipfile -l addon.zip | grep -q 'ForeverAHPrices/ForeverAHPrices.toc'
+          python3 -m zipfile -l addon.zip | grep -q 'ForeverAHPrices/Sync prices.bat'
           docker exec -u 99:100 smoke touch /data/write-test
           docker top smoke -eo pid,uid,cmd | awk '/server.py/ && $2 == 99 {found=1} END {exit !found}'
           docker rm -f smoke

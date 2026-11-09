@@ -1008,6 +1008,7 @@
     const root = $('#tab-settings');
     root.innerHTML = `
       <div id="stServer"></div>
+      <div id="stAddon"></div>
       ${location.protocol === 'file:' ? '<div class="banner"><b>Close this page and open the app with <code>start.bat</code>.</b> Blizzard appears to refuse pages opened directly as a file (HTTP 403).</div>' : ''}
       <div class="grid2">
         <div class="card"><h2>1 · Blizzard API (automatic prices)</h2>
@@ -1273,6 +1274,14 @@
     el.innerHTML = s.enabled
       ? `<div class="banner info"><b>Prices come from your home server</b> (${esc(s.label)}), updated in the background${s.dataTs ? '. Blizzard\'s latest copy is from ' + F.timeAgo(s.dataTs) : ''}. Steps 1 and 2 aren't needed for prices. To change market, update the container's settings.${s.error ? ' <span class="warn">' + esc(s.error) + '</span>' : ''}</div>`
       : `<div class="banner">${esc(s.error)}</div>`;
+    $('#stAddon').innerHTML = s.enabled ? `<div class="card"><h2>In-game tooltips</h2>
+      <ol class="steps">
+        <li>Download the addon and unzip it into <code>World of Warcraft\\_forever_\\Interface\\AddOns</code>.</li>
+        <li>In the new <code>ForeverAHPrices</code> folder, double-click <code>Sync prices.bat</code> and leave it open while you play.</li>
+        <li>Restart the game once. After that, type <code>/reload</code> whenever you want the newest prices.</li>
+      </ol>
+      <div class="row" style="margin-top:10px"><a class="btn primary" href="/api/addon/ForeverAHPrices.zip" download>Download addon</a><span class="muted small">Addons can't go online, so the sync window brings the prices from this server to your PC. Type <code>/fah</code> in game for options.</span></div>
+    </div>` : '';
   }
   async function doSync(manualTrigger) {
     if (F.serverMode) return pullServerUi(manualTrigger);
