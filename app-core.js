@@ -74,7 +74,7 @@
     priceSource: 'market', ahCut: 5, craftIntermediates: true, includePatterns: true, ignoreSkill: false,
     deWithoutSkill: false, depth: true, budget: 1000000, hideNoProduct: true, hideIncomplete: false,
     groupMode: 'none', topN: 5, sortKey: 'profit', sortDir: -1, profFilter: '', search: '', minProfit: '',
-    linkTemplate: 'https://www.wowhead.com/classic/item={id}', csvUnit: 'copper', csvTarget: 'manual', tab: 'best',
+    linkTemplate: 'https://www.wowhead.com/forever/item={id}', csvUnit: 'copper', csvTarget: 'manual', tab: 'best',
     sellDays: '', plannerRecipe: '', plannerCap: '', deMinProfit: '', deQuality: 'all', priceFilter: 'used', recipeFilter: 'all',
     recipeProf: '', recipeSearch: '', priceSearch: ''
   };
@@ -116,7 +116,7 @@
   F.rebuild = () => {
     ITEMS = new Map();
     const add = (name, a, custom) => {
-      const it = { name, id: a[0] || 0, vendor: a[1] || 0, q: a[2] == null ? null : a[2], ilvl: a[3] == null ? null : a[3], kind: a[4] || '', custom };
+      const it = { name, id: a[0] || 0, vendor: a[1] || 0, q: a[2] == null ? null : a[2], ilvl: a[3] == null ? null : a[3], kind: a[4] || '', icon: a[5] || '', custom };
       ITEMS.set(name, it);
       return it;
     };
@@ -134,7 +134,7 @@
         const [name, skill, reag, src = 'T', o = {}] = row;
         let r = {
           key: prof + '|' + name, prof, name, skill, reagents: Array.isArray(reag) ? reag : F.parseReagents(reag), src: src[0], u: src.includes('u'),
-          n: o.n || 1, product: o.p === undefined ? name : o.p, cd: o.cd || 0, note: o.note || '', builtin: true
+          n: o.n || 1, product: o.p === undefined ? name : o.p, cd: o.cd || 0, note: o.note || '', icon: o.i || '', builtin: true
         };
         const ed = st.recipeEdits[r.key];
         if (ed) {
@@ -187,14 +187,17 @@
     const m = it.id && st.meta[it.id];
     return (m && m.b) || it.vendor;
   };
+  F.PROF_ICON = { Alchemy: 'trade_alchemy', Blacksmithing: 'trade_blacksmithing', Enchanting: 'trade_engraving', Engineering: 'trade_engineering', Leatherworking: 'inv_misc_armorkit_17', Tailoring: 'trade_tailoring', Mining: 'trade_mining', Cooking: 'inv_misc_food_15', 'First Aid': 'spell_holy_sealofsacrifice' };
+  F.iconImg = icon => `<img class="ico" src="https://wow.zamimg.com/images/wow/icons/medium/${F.esc(icon || 'inv_misc_questionmark')}.jpg" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">`;
   F.itemLink = (name, extraClass = '') => {
     const it = F.item(name), q = F.info(it).q;
     const cls = `item q${q == null ? 1 : q} ${extraClass}`;
+    const label = (extraClass.includes('noico') ? '' : F.iconImg(it.icon)) + F.esc(name);
     if (it.id && st.S.linkTemplate) {
       const href = st.S.linkTemplate.replace('{id}', it.id);
-      return `<a class="${cls}" href="${F.esc(href)}" target="_blank" rel="noopener">${F.esc(name)}</a>`;
+      return `<a class="${cls}" href="${F.esc(href)}" target="_blank" rel="noopener">${label}</a>`;
     }
-    return `<span class="${cls}">${F.esc(name)}</span>`;
+    return `<span class="${cls}">${label}</span>`;
   };
 
   // ---------------------------------------------------------------- auction data

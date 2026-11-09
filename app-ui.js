@@ -67,8 +67,8 @@
     return h;
   }
   function recipeLabel(r) {
-    if (!r.product) return `<span class="item q1">${esc(r.name)}</span>`;
-    if (r.product !== r.name) return `${esc(r.name)} <span class="dim">→</span> ${F.itemLink(r.product)}`;
+    if (!r.product) return `<span class="item q1">${F.iconImg(r.icon || F.PROF_ICON[r.prof])}${esc(r.name)}</span>`;
+    if (r.product.toLowerCase() !== r.name.toLowerCase()) return `${esc(r.name)} <span class="dim">→</span> ${F.itemLink(r.product)}`;
     return F.itemLink(r.product);
   }
   function syncControl(k) {
@@ -106,8 +106,9 @@
   function renderHeader(busyText) {
     const ah = st.ah, el = $('#ahStatus');
     let h;
-    if (!ah) h = 'No auction data yet. <a href="#" data-goto="settings">Connect the Blizzard API</a> or <a href="#" data-goto="prices">import prices</a>.';
-    else h = `AH data: <b>${esc(ah.label)}</b> · ${F.timeAgo(ah.ts)} · ${ah.count.toLocaleString()} ${ah.books ? 'auctions' : 'prices'} <span class="dim">(${esc(ah.source)})</span>`;
+    const fresh = ah && Date.now() - ah.ts < 7200000;
+    if (!ah) h = '<i class="dot"></i>No auction data yet. <a href="#" data-goto="settings">Connect the Blizzard API</a> or <a href="#" data-goto="prices">import prices</a>.';
+    else h = `<i class="dot ${fresh ? 'ok' : 'old'}"></i><b>${esc(ah.label)}</b> · ${F.timeAgo(ah.ts)} · ${ah.count.toLocaleString()} ${ah.books ? 'auctions' : 'prices'} <span class="dim">(${esc(ah.source)})</span>`;
     if (busyText || F.syncing) h += ` · <span class="warn">${esc(busyText || 'updating…')}</span>`;
     el.innerHTML = h;
     const b = $('#budgetInput');
@@ -134,7 +135,7 @@
       <div class="card">
         <div class="row" style="margin-bottom:10px"><h2 style="margin:0">Your professions</h2>
           <span class="muted small">Enter your current skill (0 = you don't have it). Only recipes you can make are ranked.</span></div>
-        <div class="profs">${F.PROFS.map(p => `<label class="prof" data-profbox="${esc(p)}"><span>${esc(p)}</span><input type="number" min="0" max="300" data-prof="${esc(p)}" placeholder="0"></label>`).join('')}</div>
+        <div class="profs">${F.PROFS.map(p => `<label class="prof" data-profbox="${esc(p)}">${F.iconImg(F.PROF_ICON[p])}<span class="profname">${esc(p)}<i class="skillbar"><b></b></i></span><input type="number" min="0" max="300" data-prof="${esc(p)}" placeholder="0"></label>`).join('')}</div>
         <div class="row" style="margin-top:12px">
           <label class="chk"><input type="checkbox" data-set="ignoreSkill"> Show all recipes (ignore skill)</label>
           <label class="chk"><input type="checkbox" data-set="includePatterns"> Assume I have the patterns</label>
@@ -167,6 +168,7 @@
         </div>
       </div>
       <div id="bestBanner"></div>
+      <div id="bestHero"></div>
       <div id="bestOut"></div>`;
     bindSettings(root);
     $$('[data-prof]', root).forEach(inp => {
@@ -212,7 +214,11 @@
     });
   }
   function markProfs() {
-    $$('[data-profbox]').forEach(el => el.classList.toggle('on', (+st.skills[el.dataset.profbox] || 0) > 0));
+    $$('[data-profbox]').forEach(el => {
+      const sk = +st.skills[el.dataset.profbox] || 0;
+      el.classList.toggle('on', sk > 0);
+      el.style.setProperty('--skill', Math.min(100, sk / 3) + '%');
+    });
   }
   const SORTS = {
     profit: e => e.profit, budgetProfit: e => e.budgetProfit, margin: e => e.margin, cost: e => e.cost,
@@ -276,6 +282,15 @@
     }
     if (!hasSkill && !s.ignoreSkill && !bracket) banner += '<div class="banner info">Enter your profession skill levels above, or tick <b>Show all recipes</b>, to see what you can craft.</div>';
     $('#bestBanner').innerHTML = banner;
+    const picks = s.groupMode === 'none' ? evs.filter(e => e.profit > 0 && e.r.product).slice(0, 3) : [];
+    $('#bestHero').innerHTML = picks.length ? `<div class="heroes">${picks.map((e, i) => {
+      const q = F.info(F.item(e.r.product)).q;
+      return `<div class="hero" role="button" tabindex="0" data-plan="${esc(e.r.key)}" title="Open in budget planner">
+        <span class="rank">${i + 1}</span>
+        <span class="item q${q == null ? 1 : q}">${F.iconImg(F.item(e.r.product).icon)}</span>
+        <span class="heromain"><b class="q${q == null ? 1 : q}">${esc(e.r.name)}</b><small>${esc(e.r.prof)} ${e.r.skill} · sells via ${esc(e.exit)}</small></span>
+        <span class="heroval pos">${money(e.profit)}<small>per craft</small></span></div>`;
+    }).join('')}</div>` : '';
 
     const head = `<thead><tr>
       ${th('name', 'Recipe')}<th>Profession</th>${th('skill', 'Skill', 'num')}${th('cost', 'Cost / craft', 'num')}
@@ -341,7 +356,7 @@
     let h = `<tr class="clickable${ev.locked ? ' locked' : ''}" data-key="${esc(r.key)}">
       <td>${open ? '▾' : '▸'} ${recipeLabel(r)}${badges(r)}${lock}</td>
       <td class="muted">${esc(r.prof)}</td><td class="num">${r.skill}</td><td class="num">${cost}</td>
-      <td class="num">${sells}</td>${profitCell(ev.profit)}<td class="num">${pct(ev.margin)}</td>
+      <td class="num">${sells}</td>${profitCell(ev.profit)}<td class="num">${ev.margin == null ? pct(null) : `<span class="pill ${ev.margin > 0 ? 'up' : 'down'}">${pct(ev.margin)}</span>`}</td>
       <td class="num">${num(ev.supply)}</td><td class="num">${r.product ? rateText(ev.rate) : ''}</td><td class="num">${crafts}</td>${profitCell(ev.budgetProfit)}
       <td><button class="btn sm" data-plan="${esc(r.key)}" title="Open in budget planner">Plan</button></td></tr>`;
     if (open) h += `<tr class="detail"><td colspan="12">${detailHtml(ev)}</td></tr>`;
@@ -895,7 +910,7 @@
       const checked = st.known[r.key] === true || (st.known[r.key] !== false && (!isPattern || s.includePatterns));
       return `<tr><td><input type="checkbox" data-known="${esc(r.key)}" ${checked ? 'checked' : ''} title="Include in calculations"></td>
         <td class="muted">${esc(r.prof)}</td><td class="num">${r.skill}</td><td>${recipeLabel(r)}${badges(r)}</td>
-        <td class="small">${r.reagents.map(g => `${g.qty}× ${F.itemLink(g.name)}`).join(', ')}</td>
+        <td class="small">${r.reagents.map(g => `${g.qty}× ${F.itemLink(g.name, 'noico')}`).join(', ')}</td>
         <td class="src">${esc(F.SRC_LABEL[r.src] || r.src)}</td><td class="num">${money(c.cost)}</td>
         <td><button class="btn sm" data-edit="${esc(r.key)}">Edit</button></td></tr>`;
     }).join('');
@@ -1054,7 +1069,7 @@
             <div class="field">AH cut %<input type="number" data-set="ahCut" min="0" max="50" step="0.5" style="width:80px"></div>
           </div>
           <div class="row"><label class="chk"><input type="checkbox" data-set="deWithoutSkill"> Count disenchanting even if my Enchanting skill is too low</label></div>
-          <div class="row"><div class="field" style="flex:1">Item link format (<code>{id}</code> = item ID)<input data-set="linkTemplate"></div></div>
+          <div class="row"><div class="field" style="flex:1"><span>Item link format (<code>{id}</code> = item ID)</span><input data-set="linkTemplate"></div></div>
           <h3>Backup</h3>
           <div class="row"><button class="btn" id="stExport">Export settings &amp; edits</button><button class="btn" id="stImport">Import backup…</button><button class="btn danger" id="stReset">Reset everything</button></div>
           <p class="muted small">The backup holds skills, manual prices, recipe edits and custom recipes. It never includes your API secret.</p>
