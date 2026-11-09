@@ -289,7 +289,7 @@
   };
 
   // auctions: [{item:{id}, quantity, buyout | unit_price}]
-  F.applyAuctions = (auctions, label, source) => {
+  F.applyAuctions = (auctions, label, source, dataTs) => {
     updateSales(auctions, label);
     const per = new Map();
     for (const a of auctions) {
@@ -317,7 +317,7 @@
       st.ahPrev = prev;
       F.save('ahPrev', prev);
     }
-    st.ah = { ts: Date.now(), label, source, count: auctions.length, books: true, items, all };
+    st.ah = { ts: Date.now(), dataTs: dataTs || 0, label, source, count: auctions.length, books: true, items, all };
     F.save('ah', st.ah);
     return { auctions: auctions.length, items: Object.keys(items).length, all: per.size };
   };
@@ -348,7 +348,7 @@
       st.ahPrev = prev;
       F.save('ahPrev', prev);
     }
-    st.ah = { ts: m.ts, label: m.label, source: 'Home server', count: m.count, books: true, items, all };
+    st.ah = { ts: m.ts, dataTs: m.dataTs || 0, label: m.label, source: 'Home server', count: m.count, books: true, items, all };
     F.save('ah', st.ah);
     const sold = {};
     for (const [id, q] of Object.entries(m.sales.sold)) if (BY_ID.has(+id)) sold[id] = q;
@@ -705,7 +705,7 @@
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     if (!url.searchParams.has('locale')) url.searchParams.set('locale', 'en_US');
     let res;
-    try { res = await fetch(url, { headers: { Authorization: 'Bearer ' + t } }); }
+    try { res = await fetch(url, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' }); } // browsers otherwise reuse hours-old auction data
     catch (e) { throw new Error('Network error contacting the Blizzard API (' + e.message + ').'); }
     // A saved token Blizzard no longer accepts can come back as 401 or 403. Requests run in parallel and
     // some 403s are genuine, so share one refresh and do it at most once a minute.
@@ -721,6 +721,7 @@
       if (stale) return F.api(path, params, attempt + 1);
     }
     if (res.status === 429 && attempt < 5) { await F.sleep(1000 * (attempt + 1)); return F.api(path, params, attempt + 1); }
+    F.lastModified = res.headers.get('last-modified');
     if (!res.ok) {
       let detail = '';
       try { const txt = await res.text(); const j = JSON.parse(txt); detail = j.detail || j.error_description || j.error || j.message || txt.slice(0, 160); } catch (e2) { /* no body */ }
@@ -792,6 +793,7 @@
   F.fetchForeverAuctions = async (rid, hid) => {
     const base = `/data/wow/ruleset/${rid}/auctions/${hid}`, params = { namespace: F.ns('dynamic') };
     const reg = await F.api(base, params);
+    F.snapshotTs = Date.parse(F.lastModified) || 0;
     let com = [];
     try { com = (await F.api(base + '/commodities', params)).auctions || []; }
     catch (e) { if (e.status !== 404) throw e; }
@@ -880,7 +882,7 @@
         onStatus && onStatus('Downloading Forever auctions and commodities…');
         const list = await F.fetchForeverAuctions(rulesetId(), S.ahId);
         onStatus && onStatus('Crunching ' + list.length.toLocaleString() + ' auctions…');
-        return F.applyAuctions(list, `Forever ${S.realmName} · ${S.ahName}`, 'Blizzard API');
+        return F.applyAuctions(list, `Forever ${S.realmName} · ${S.ahName}`, 'Blizzard API', F.snapshotTs);
       }
       onStatus && onStatus('Downloading auction data…');
       const path = S.ahId ? `/data/wow/connected-realm/${S.connectedRealmId}/auctions/${S.ahId}` : `/data/wow/connected-realm/${S.connectedRealmId}/auctions`;

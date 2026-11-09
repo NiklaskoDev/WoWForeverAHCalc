@@ -106,9 +106,10 @@
   function renderHeader(busyText) {
     const ah = st.ah, el = $('#ahStatus');
     let h;
-    const fresh = ah && Date.now() - ah.ts < 7200000;
+    const age = ah ? (ah.dataTs || ah.ts) : 0;
+    const fresh = ah && Date.now() - age < 7200000;
     if (!ah) h = '<i class="dot"></i>No auction data yet. <a href="#" data-goto="settings">Connect the Blizzard API</a> or <a href="#" data-goto="prices">import prices</a>.';
-    else h = `<i class="dot ${fresh ? 'ok' : 'old'}"></i><b>${esc(ah.label)}</b> · ${F.timeAgo(ah.ts)} · ${ah.count.toLocaleString()} ${ah.books ? 'auctions' : 'prices'} <span class="dim">(${esc(ah.source)})</span>`;
+    else h = `<i class="dot ${fresh ? 'ok' : 'old'}"></i><b>${esc(ah.label)}</b> · <span title="When Blizzard took this copy of the auction house. The game is live, so prices can have moved since.">${ah.dataTs ? 'Blizzard data from ' : ''}${F.timeAgo(age)}</span> · ${ah.count.toLocaleString()} ${ah.books ? 'auctions' : 'prices'} <span class="dim">(${esc(ah.source)})</span>`;
     if (busyText || F.syncing) h += ` · <span class="warn">${esc(busyText || 'updating…')}</span>`;
     el.innerHTML = h;
     const b = $('#budgetInput');
@@ -1270,7 +1271,7 @@
     const el = $('#stServer'), s = F.serverStatus;
     if (!el || !s) return;
     el.innerHTML = s.enabled
-      ? `<div class="banner info"><b>Prices come from your home server</b> (${esc(s.label)}), updated in the background${s.ts ? ', last ' + F.timeAgo(s.ts) : ''}. Steps 1 and 2 aren't needed for prices. To change market, update the container's settings.${s.error ? ' <span class="warn">' + esc(s.error) + '</span>' : ''}</div>`
+      ? `<div class="banner info"><b>Prices come from your home server</b> (${esc(s.label)}), updated in the background${s.dataTs ? '. Blizzard\'s latest copy is from ' + F.timeAgo(s.dataTs) : ''}. Steps 1 and 2 aren't needed for prices. To change market, update the container's settings.${s.error ? ' <span class="warn">' + esc(s.error) + '</span>' : ''}</div>`
       : `<div class="banner">${esc(s.error)}</div>`;
   }
   async function doSync(manualTrigger) {

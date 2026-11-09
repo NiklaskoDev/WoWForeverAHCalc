@@ -19,7 +19,7 @@
   <Config Name="Region" Target="FOREVER_REGION" Default="eu|us" Mode="" Description="Your game region." Type="Variable" Display="always" Required="true" Mask="false">eu</Config>
   <Config Name="Ruleset" Target="FOREVER_RULESET" Default="2" Mode="" Description="1 = PvP, 2 = Normal, 3 = Roleplay, 15 = Roleplay PvP." Type="Variable" Display="always" Required="true" Mask="false">2</Config>
   <Config Name="Auction house" Target="FOREVER_HOUSE" Default="113" Mode="" Description="The # number from the app's auction house list, e.g. 113." Type="Variable" Display="always" Required="true" Mask="false">113</Config>
-  <Config Name="Check interval (minutes)" Target="POLL_MINUTES" Default="20" Mode="" Description="How often to check for new auction data." Type="Variable" Display="advanced" Required="false" Mask="false">20</Config>
+  <Config Name="Check interval (minutes)" Target="POLL_MINUTES" Default="5" Mode="" Description="How often to check whether Blizzard has published new data." Type="Variable" Display="advanced" Required="false" Mask="false">5</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User that owns the app data. 99 is Unraid's nobody." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group that owns the app data. 100 is Unraid's users." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
 </Container>

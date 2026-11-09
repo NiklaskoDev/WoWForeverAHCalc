@@ -3,6 +3,7 @@
 Credentials come from the environment only. No endpoint reads or changes them.
 """
 import base64
+import email.utils
 import functools
 import gzip
 import http.server
@@ -20,7 +21,7 @@ CLIENT_SECRET = os.environ.get('BLIZZARD_CLIENT_SECRET', '').strip()
 REGION = os.environ.get('FOREVER_REGION', 'eu').strip().lower()
 RULESET = os.environ.get('FOREVER_RULESET', '').strip()
 HOUSE = os.environ.get('FOREVER_HOUSE', '').strip()
-POLL_MINUTES = max(5, int(os.environ.get('POLL_MINUTES', '20') or 20))
+POLL_MINUTES = max(1, int(os.environ.get('POLL_MINUTES', '5') or 5))
 DATA_DIR = os.environ.get('DATA_DIR', '/data')
 WEB_DIR = os.environ.get('WEB_DIR', '/app/web')
 PORT = int(os.environ.get('PORT', '8080'))
@@ -32,7 +33,7 @@ MAX_GAP_HOURS = 3
 MAX_SALES_HOURS = 336
 
 lock = threading.Lock()
-status = {'enabled': False, 'ts': 0, 'label': LABEL, 'error': '', 'lastCheck': 0}
+status = {'enabled': False, 'ts': 0, 'dataTs': 0, 'label': LABEL, 'error': '', 'lastCheck': 0}
 market_gz = None
 token = None
 last_modified = {'reg': None, 'com': None}
@@ -93,6 +94,12 @@ def api(route, since=None, retry=True):
             token = None
             return api(route, since, False)
         raise
+
+
+def data_age_ms():
+    """When Blizzard generated the current snapshot, which can be well before we downloaded it."""
+    stamps = [email.utils.parsedate_to_datetime(v).timestamp() for v in last_modified.values() if v]
+    return int(max(stamps) * 1000) if stamps else 0
 
 
 def fetch_part(key, route, since):
@@ -227,6 +234,7 @@ def publish(market):
     with lock:
         market_gz = data
         status['ts'] = market['ts']
+        status['dataTs'] = market.get('dataTs', 0)
         status['error'] = ''
 
 
@@ -239,7 +247,7 @@ def refresh():
         return False
     now = time.time()
     sales = update_sales(auctions, now)
-    market = {'ts': int(now * 1000), 'label': LABEL, 'count': len(auctions), 'items': aggregate(auctions), 'sales': sales}
+    market = {'ts': int(now * 1000), 'dataTs': data_age_ms(), 'label': LABEL, 'count': len(auctions), 'items': aggregate(auctions), 'sales': sales}
     write_json('market.json', market)
     publish(market)
     print(f'{time.strftime("%H:%M:%S")} updated: {len(auctions)} auctions, {market["items"].__len__()} items, '
